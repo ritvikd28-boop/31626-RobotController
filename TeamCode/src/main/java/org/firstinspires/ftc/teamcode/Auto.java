@@ -1,109 +1,188 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
- * ... (copyright header remains the same) ... */
-
-
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-
-@Autonomous
+@Autonomous(name="Auto: Main Autonomous", group="Linear OPMODE")
 public class Auto extends LinearOpMode {
 
-        /* Declare OpMode members. */
-        private DcMotor leftDrive = null;
-        private DcMotor rightDrive = null;
-        private ElapsedTime runtime = new ElapsedTime();
+    // Drive motors
+    private DcMotorEx frontLeftDrive = null;
+    private DcMotorEx backLeftDrive = null;
+    private DcMotorEx frontRightDrive = null;
+    private DcMotorEx backRightDrive = null;
 
-        // --- ROBOT CONSTANTS (Tune these for your robot) ---
-        static final double COUNTS_PER_MOTOR_REV = 1440;    // Example: TETRIX Motor Encoder
-        static final double DRIVE_GEAR_REDUCTION = 1.0;     // No external gearing.
-        static final double WHEEL_DIAMETER_INCHES = 4.0;     // For figuring circumference
-        static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
-                (WHEEL_DIAMETER_INCHES * 3.1415);
-        // --- MOVEMENT CONSTANTS ---
-        static final double DRIVE_SPEED = 0.4;     // Slower speed for shorter distance
+    // Other mechanisms
+    private DcMotorEx intakeMotor = null;
+    private DcMotorEx launcherLeft = null;
+    private DcMotorEx launcherRight = null;
+    private Servo rStandardServo = null;
+    private Servo lStandardServo = null;
 
-        @Override
-        public void runOpMode() {
+    private ElapsedTime runtime = new ElapsedTime();
 
-            // --- INITIALIZATION ---
-            leftDrive = hardwareMap.get(DcMotor.class, "front_left_drive");
-            rightDrive = hardwareMap.get(DcMotor.class, "front_right_drive");
+    // --- ROBOT CONSTANTS ---
 
-            leftDrive.setDirection(DcMotor.Direction.REVERSE);
-            rightDrive.setDirection(DcMotor.Direction.FORWARD);
+    // These theoretical values are now only for reference.
+    static final double COUNTS_PER_MOTOR_REV    = 537.7;
+    static final double DRIVE_GEAR_REDUCTION    = 1.0;
+    static final double WHEEL_DIAMETER_INCHES   = 4.0;
 
-            leftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            rightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    // =================================================================================================
+    // IMPORTANT: THIS IS THE NUMBER YOU MUST TUNE FOR YOUR ROBOT.
+    // 1. Run the code and measure how far the robot ACTUALLY travels.
+    // 2. Calculate the correct value with: New_Value = 42.79 * (10 / Actual_Distance_Measured)
+    // 3. Replace the number below with your new, calculated value.
+    //
+    // (The initial value of 42.79 comes from the theoretical calculation)
+    // =================================================================================================
+    static final double COUNTS_PER_INCH = 42.79; // <--- !!! REPLACE THIS WITH YOUR TUNED VALUE !!!
 
-            leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    /*
+     * This is the theoretical calculation. We comment it out in favor of the tuned value above.
+     * static final double COUNTS_PER_INCH = (COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) /
+     *         (WHEEL_DIAMETER_INCHES * Math.PI);
+     */
 
-            telemetry.addData("Status", "Ready to run");
-            telemetry.update();
+    static final double DRIVE_SPEED = 0.5;
 
-            // Wait for the game to start (driver presses START)
-            waitForStart();
+    @Override
+    public void runOpMode() {
 
-            // --- AUTONOMOUS PATH ---
+        // --- INITIALIZATION ---
+        frontLeftDrive  = hardwareMap.get(DcMotorEx.class, "frontLeftDrive");
+        backLeftDrive   = hardwareMap.get(DcMotorEx.class, "backLeftDrive");
+        frontRightDrive = hardwareMap.get(DcMotorEx.class, "frontRightDrive");
+        backRightDrive  = hardwareMap.get(DcMotorEx.class, "backRightDrive");
 
-            // Step 1: Drive forward for 2 inches
-            telemetry.addData("Path", "Step 1: Driving forward 2 inches");
-            telemetry.update();
-            encoderDrive(DRIVE_SPEED, 2.0, 2.0, 4.0); // Drive 2 inches with a 4-second timeout
+        intakeMotor     = hardwareMap.get(DcMotorEx.class, "intakeMotor");
+        launcherLeft    = hardwareMap.get(DcMotorEx.class, "LauncherLeft");
+        launcherRight   = hardwareMap.get(DcMotorEx.class, "LauncherRight");
+        rStandardServo  = hardwareMap.get(Servo.class, "RStandard_Servo");
+        lStandardServo  = hardwareMap.get(Servo.class, "LStandard_Servo");
 
-            // Step 2: Wait for half a second
-            telemetry.addData("Path", "Step 2: Waiting 0.5 seconds");
-            telemetry.update();
-            sleep(500); // 500 milliseconds = 0.5 seconds
+        // Directions
+        frontLeftDrive.setDirection(DcMotor.Direction.FORWARD);
+        backLeftDrive.setDirection(DcMotor.Direction.FORWARD);
+        frontRightDrive.setDirection(DcMotor.Direction.REVERSE);
+        backRightDrive.setDirection(DcMotor.Direction.REVERSE);
 
-            // --- END OF PATH ---
-            telemetry.addData("Path", "Complete");
-            telemetry.update();
-            sleep(1000);  // Keep "Complete" message on screen for 1 second
-        }
+        intakeMotor.setDirection(DcMotor.Direction.FORWARD);
+        launcherLeft.setDirection(DcMotor.Direction.FORWARD);
+        launcherRight.setDirection(DcMotor.Direction.REVERSE);
 
-        /**
-         * Method to perform a relative move, based on encoder counts.
-         */
-        public void encoderDrive(double speed,
-                                 double leftInches, double rightInches,
-                                 double timeoutS) {
-            int newLeftTarget;
-            int newRightTarget;
+        // Reset encoders for all motors
+        frontLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        intakeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcherLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        launcherRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-            if (opModeIsActive()) {
-                newLeftTarget = leftDrive.getCurrentPosition() + (int) (leftInches * COUNTS_PER_INCH);
-                newRightTarget = rightDrive.getCurrentPosition() + (int) (rightInches * COUNTS_PER_INCH);
-                leftDrive.setTargetPosition(newLeftTarget);
-                rightDrive.setTargetPosition(newRightTarget);
+        // Set all motors to run using encoders
+        frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        intakeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        launcherLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        launcherRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-                leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                rightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        telemetry.addData("Status", "Initialization Complete");
+        telemetry.addData(">", "Press PLAY to start the autonomous path.");
+        telemetry.update();
 
-                runtime.reset();
-                leftDrive.setPower(Math.abs(speed));
-                rightDrive.setPower(Math.abs(speed));
+        // --- WAIT FOR START ---
+        waitForStart();
+        runtime.reset();
 
-                while (opModeIsActive() &&
-                        (runtime.seconds() < timeoutS) &&
-                        (leftDrive.isBusy() && rightDrive.isBusy())) {
-                    // Wait until the move is complete
-                    telemetry.addData("Running to", " %7d :%7d", newLeftTarget, newRightTarget);
-                    telemetry.addData("Currently at", " at %7d :%7d",
-                            leftDrive.getCurrentPosition(), rightDrive.getCurrentPosition());
-                    telemetry.update();
-                }
+        // --- AUTONOMOUS ACTIONS ---
+        telemetry.addData("Path", "Step 1: Driving forward 10 inches");
+        telemetry.update();
+        encoderDrive(DRIVE_SPEED, 10, 10, 10, 10, 5.0);
 
-                leftDrive.setPower(0);
-                rightDrive.setPower(0);
+        // --- Step 2: Activate intake, servos, and launchers ---
+        telemetry.addData("Path", "Step 2: Activating mechanisms");
+        telemetry.update();
 
-                leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        intakeMotor.setVelocity(1000);
+        launcherLeft.setVelocity(1500);
+        launcherRight.setVelocity(1500);
+        rStandardServo.setPosition(0.5);
+        lStandardServo.setPosition(0.5);
+
+        sleep(2000); // Run all mechanisms for 2 seconds
+
+        // --- Step 3: Stop all mechanisms ---
+        intakeMotor.setVelocity(0);
+        launcherLeft.setVelocity(0);
+        launcherRight.setVelocity(0);
+
+        telemetry.addData("Path", "Complete");
+        telemetry.update();
+        sleep(1000);
+    }
+
+    // --- Encoder drive method ---
+    public void encoderDrive(double speed,
+                             double leftFrontInches, double rightFrontInches,
+                             double leftBackInches, double rightBackInches,
+                             double timeoutS) {
+        int newLeftFrontTarget;
+        int newRightFrontTarget;
+        int newLeftBackTarget;
+        int newRightBackTarget;
+
+        if (opModeIsActive()) {
+            newLeftFrontTarget  = frontLeftDrive.getCurrentPosition() + (int)(leftFrontInches * COUNTS_PER_INCH);
+            newRightFrontTarget = frontRightDrive.getCurrentPosition() + (int)(rightFrontInches * COUNTS_PER_INCH);
+            newLeftBackTarget   = backLeftDrive.getCurrentPosition() + (int)(leftBackInches * COUNTS_PER_INCH);
+            newRightBackTarget  = backRightDrive.getCurrentPosition() + (int)(rightBackInches * COUNTS_PER_INCH);
+
+            frontLeftDrive.setTargetPosition(newLeftFrontTarget);
+            frontRightDrive.setTargetPosition(newRightFrontTarget);
+            backLeftDrive.setTargetPosition(newLeftBackTarget);
+            backRightDrive.setTargetPosition(newRightBackTarget);
+
+            frontLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backLeftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backRightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            runtime.reset();
+            frontLeftDrive.setPower(Math.abs(speed));
+            frontRightDrive.setPower(Math.abs(speed));
+            backLeftDrive.setPower(Math.abs(speed));
+            backRightDrive.setPower(Math.abs(speed));
+
+            while (opModeIsActive() &&
+                    (runtime.seconds() < timeoutS) &&
+                    (frontLeftDrive.isBusy() && frontRightDrive.isBusy() &&
+                            backLeftDrive.isBusy() && backRightDrive.isBusy())) {
+
+                // Optional: You can add telemetry here for debugging during the move
+                // Example:
+                // telemetry.addData("Running to", "%7d", newLeftFrontTarget);
+                // telemetry.addData("Currently at", "%7d", frontLeftDrive.getCurrentPosition());
+                // telemetry.update();
             }
+
+            frontLeftDrive.setPower(0);
+            frontRightDrive.setPower(0);
+            backLeftDrive.setPower(0);
+            backRightDrive.setPower(0);
+
+            frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            sleep(100); // Small pause to ensure motors stop fully before next command
         }
     }
+}
